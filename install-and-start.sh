@@ -8,4 +8,4 @@ make
 sudo make modules_install
 sudo depmod -a
 
-sudo ./load
+sudo ./lttngprofile-start.sh
