@@ -42,7 +42,6 @@ struct process_key_t {
 
 struct process_val_t {
   pid_t tgid;
-  int signo;
   uint64_t latency_threshold;
   struct hlist_node hlist;
   struct rcu_head rcu;
@@ -139,11 +138,6 @@ static void process_unregister(pid_t tgid)
   rcu_read_unlock();
 }
 
-static int check_signal(unsigned long sig)
-{
-  return (sig == SIGUSR1 || sig == SIGUSR2);
-}
-
 /*
  * Probes.
  */
@@ -193,7 +187,6 @@ static void syscall_exit_probe(
   struct thread_key_t thread_key;
   struct thread_val_t *thread_val;
   struct task_struct *task = get_current();
-  int signo;
   uint64_t latency_threshold = 0;
   uint64_t sys_entry_ts = 0;
   uint64_t sys_exit_ts = trace_clock_read64();
@@ -207,7 +200,6 @@ static void syscall_exit_probe(
     return;
   }
 
-  signo = process_val->signo;
   latency_threshold = process_val->latency_threshold;
 
   // Get the timestamp of the syscall entry.
@@ -230,7 +222,7 @@ static void syscall_exit_probe(
   }
 
   // Send the signal.
-  send_sig_info(signo, SEND_SIG_NOINFO, task);
+  send_sig_info(SIGPROF, SEND_SIG_NOINFO, task);
 }
 
 static void sched_process_exit_probe(
@@ -268,8 +260,6 @@ long lttngprofile_module_ioctl(
 
   switch(msg.cmd) {
   case LTTNGPROFILE_MODULE_REGISTER:
-    if (!check_signal(msg.signo))
-      return -EINVAL;
     /* check if already registered */
     rcu_read_lock();
     val = find_process(&key, hash);
@@ -281,11 +271,9 @@ long lttngprofile_module_ioctl(
     /* do registration */
     val = kzalloc(sizeof(struct process_val_t), GFP_KERNEL);
     val->tgid = key.tgid;
-    val->signo = msg.signo;
     val->latency_threshold = msg.latency_threshold;
     hash_add_rcu(process_map, &val->hlist, hash);
-    printk("lttngprofile_module_ioctl register %p 0x%x 0x%lx\n",
-           file, cmd, arg);
+    printk("lttngprofile_module_ioctl register %d\n", task->tgid);
     break;
   case LTTNGPROFILE_MODULE_UNREGISTER:
     process_unregister(task->tgid);
