@@ -20,6 +20,12 @@ endif
 
 obj-m += lttngprofile.o
 
+ifneq ($(KERNELRELEASE),)
+lttngprofile-objs += $(shell \
+	if [ $(VERSION) -eq 3 -a $(PATCHLEVEL) -ge 15 -a $(SUBLEVEL) -ge 0 ] ; then \
+	echo "lttng-tracepoint.o" ; fi;)
+endif
+
 else # KERNELRELEASE
 	KERNELDIR ?= /lib/modules/$(shell uname -r)/build
 	PWD := $(shell pwd)
