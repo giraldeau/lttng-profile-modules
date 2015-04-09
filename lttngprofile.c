@@ -222,7 +222,7 @@ static void syscall_exit_probe(
   }
 
   // Send the signal.
-  send_sig_info(SIGPROF, SEND_SIG_NOINFO, task);
+  //send_sig_info(SIGPROF, SEND_SIG_NOINFO, task);
 }
 
 static void sched_process_exit_probe(
