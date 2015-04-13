@@ -144,6 +144,7 @@ static void process_unregister(pid_t tgid)
 static void syscall_entry_probe(
     void *__data, struct pt_regs *regs, long id)
 {
+  /*
   u32 hash;
   struct process_val_t *process_val;
   struct thread_key_t thread_key;
@@ -177,11 +178,13 @@ static void syscall_entry_probe(
   thread_val->pid = task->pid;
   thread_val->sys_entry_ts = sys_entry_ts;
   hash_add_rcu(thread_map, &thread_val->hlist, hash);
+  */
 }
 
 static void syscall_exit_probe(
     void *__data, struct pt_regs *regs, long ret)
 {
+  /*
   u32 hash;
   struct process_val_t *process_val;
   struct thread_key_t thread_key;
@@ -223,6 +226,7 @@ static void syscall_exit_probe(
 
   // Send the signal.
   send_sig_info(SIGPROF, SEND_SIG_NOINFO, task);
+  */
 }
 
 static void sched_process_exit_probe(
