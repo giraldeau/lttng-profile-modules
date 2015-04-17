@@ -151,6 +151,10 @@ static void syscall_entry_probe(
   struct task_struct *task = get_current();
   uint64_t sys_entry_ts = trace_clock_read64();
 
+  if (id != 39) {
+    sys_entry_ts = 0;
+  }
+
   // Check whether the process is registered to receive signals.
   rcu_read_lock();
   process_val = find_current_process();
@@ -217,12 +221,15 @@ static void syscall_exit_probe(
   rcu_read_unlock();
 
   // Check whether the system call was longer than the threshold.
-  if (sys_exit_ts - sys_entry_ts < latency_threshold) {
-    return;
-  }
+  //if (sys_exit_ts - sys_entry_ts < latency_threshold) {
+  //  return;
+  //}
 
-  // Send the signal.
-  send_sig_info(SIGPROF, SEND_SIG_NOINFO, task);
+  if (sys_entry_ts != 0 && sys_exit_ts > sys_entry_ts)
+  {
+    // Send the signal.
+    send_sig_info(SIGPROF, SEND_SIG_NOINFO, task);
+  }
 }
 
 static void sched_process_exit_probe(
