@@ -1,6 +1,7 @@
 #
 # Makefile for lttng-profile module, based on LTTng Makefile
 #
+ccflags-y += -I$(PWD)/include $(EXTCFLAGS)
 
 ifneq ($(KERNELRELEASE),)
 

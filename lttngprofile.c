@@ -34,6 +34,9 @@
 #include "wrapper/vmalloc.h"
 #include "module_abi.h"
 
+#define CREATE_TRACE_POINTS
+#include <trace/events/latency_tracker.h>
+
 static struct proc_dir_entry *lttngprofile_proc_dentry;
 
 struct process_key_t {
@@ -55,6 +58,7 @@ struct thread_key_t {
 struct thread_val_t {
   pid_t pid;
   uint64_t sys_entry_ts;
+  int sys_id;
   struct hlist_node hlist;
   struct rcu_head rcu;
 };
@@ -167,6 +171,7 @@ static void syscall_entry_probe(
 
   if (thread_val != NULL) {
     thread_val->sys_entry_ts = sys_entry_ts;
+    thread_val->sys_id = id;
     rcu_read_unlock();
     return;
   }
@@ -176,6 +181,7 @@ static void syscall_entry_probe(
   thread_val = kzalloc(sizeof(struct thread_val_t), GFP_KERNEL);
   thread_val->pid = task->pid;
   thread_val->sys_entry_ts = sys_entry_ts;
+  thread_val->sys_id = id;
   hash_add_rcu(thread_map, &thread_val->hlist, hash);
 }
 
@@ -190,6 +196,7 @@ static void syscall_exit_probe(
   uint64_t latency_threshold = 0;
   uint64_t sys_entry_ts = 0;
   uint64_t sys_exit_ts = trace_clock_read64();
+  int sys_id;
 
   // Check whether the process is registered to receive signals.
   rcu_read_lock();
@@ -213,6 +220,7 @@ static void syscall_exit_probe(
   }
 
   sys_entry_ts = thread_val->sys_entry_ts;
+  sys_id = thread_val->sys_id;
 
   rcu_read_unlock();
 
@@ -223,6 +231,9 @@ static void syscall_exit_probe(
 
   // Send the signal.
   send_sig_info(SIGPROF, SEND_SIG_NOINFO, task);
+
+  // Log event.
+  trace_syscall_latency(sys_entry_ts, sys_exit_ts - sys_entry_ts, sys_id);
 }
 
 static void sched_process_exit_probe(
