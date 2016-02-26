@@ -20,11 +20,16 @@ endif
 endif
 
 obj-m += lttngprofile.o
-
+lttngprofile-objs += lttngprofilex.o
 ifneq ($(KERNELRELEASE),)
 lttngprofile-objs += $(shell \
-	if [ $(VERSION) -eq 3 -a $(PATCHLEVEL) -ge 15 -a $(SUBLEVEL) -ge 0 ] ; then \
-	echo "lttng-tracepoint.o" ; fi;)
+  if [ $(VERSION) -ge 4 \
+       -o \( $(VERSION) -eq 3 -a $(PATCHLEVEL) -ge 15 -a $(SUBLEVEL) -ge 0 \) ] ; then \
+  echo "lttng-tracepoint.o" ; fi;)
+lttngprofile-objs += $(shell \
+  if [ $(VERSION) -ge 4 \
+       -o \( $(VERSION) -eq 3 -a $(PATCHLEVEL) -ge 17 -a $(SUBLEVEL) -ge 0 \) ] ; then \
+  echo "trace-clock.o" ; fi;)
 endif
 
 else # KERNELRELEASE
